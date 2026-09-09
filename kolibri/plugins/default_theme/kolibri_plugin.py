@@ -14,6 +14,26 @@ class DefaultThemeHook(theme_hook.ThemeHook):
     @property
     def theme(self):
         return {
+            "brandColors": {
+                "primary": {
+                    "v_600": "#009E88",
+                    "v_500": "#00BFA6",
+                    "v_400": "#26CCB6",
+                    "v_300": "#66DBCB",
+                    "v_200": "#9FE8DD",
+                    "v_100": "#CFF5EE",
+                    "v_50": "#E8FBF7",
+                },
+                "secondary": {
+                    "v_600": "#E85A3D",
+                    "v_500": "#FF7A59",
+                    "v_400": "#FF9478",
+                    "v_300": "#FFB49E",
+                    "v_200": "#FFD1C2",
+                    "v_100": "#FFE7DD",
+                    "v_50": "#FFF3EE",
+                },
+            },
             "signIn": {
                 "background": static("assets/default_theme/background.jpg"),
                 "backgroundImgCredit": "Lewa Wildlife Conservancy",
