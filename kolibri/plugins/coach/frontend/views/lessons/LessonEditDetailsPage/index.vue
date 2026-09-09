@@ -63,6 +63,8 @@
           description: '',
           assignments: [],
           active: false,
+          start_date: null,
+          due_date: null,
         },
         loading: true,
         disabled: false,
@@ -123,6 +125,8 @@
           assignments: newDetails.assignments,
           title: newDetails.title,
           learner_ids: newDetails.learner_ids,
+          start_date: newDetails.start_date,
+          due_date: newDetails.due_date,
         };
 
         return LessonResource.saveModel({ id: this.$route.params.lessonId, data })

@@ -135,6 +135,10 @@ const coachStrings = createTranslator('CommonCoachStrings', {
     context:
       "The 'Difficult questions' sub-tab within the 'Reports' section allows the coach to view a list of questions learners gave incorrect answers to, and gain insight of how many need help with the concept.",
   },
+  dueDateLabel: {
+    message: 'Due date',
+    context: 'Label for the optional field where a coach can set when a lesson is due.',
+  },
   entireClassLabel: {
     message: 'Entire class',
     context:
@@ -355,6 +359,10 @@ const coachStrings = createTranslator('CommonCoachStrings', {
     message: 'Resources viewed',
     context:
       "In the 'Reports' tab, coaches can see the number of viewed learning resources for each learner.",
+  },
+  startDateLabel: {
+    message: 'Start date',
+    context: 'Label for the optional field where a coach can set when a lesson should be started.',
   },
   startedLabel: {
     message: 'Started',

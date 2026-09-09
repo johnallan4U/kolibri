@@ -98,6 +98,40 @@
               :class="{ 'textbox-lg': windowIsLarge }"
             />
           </KGridItem>
+          <template v-if="!assignmentIsQuiz">
+            <!--Align with the title input-->
+            <KGridItem
+              :layout4="{ span: 1 }"
+              :layout8="{ span: 1 }"
+              :layout12="{ span: 1 }"
+            >
+              <div></div>
+            </KGridItem>
+            <KGridItem
+              :layout4="{ span: 3 }"
+              :layout8="{ span: 3 }"
+              :layout12="{ span: 5 }"
+            >
+              <KTextbox
+                v-model="startDate"
+                type="date"
+                :label="startDateLabel$()"
+                :disabled="disabled || formIsSubmitted"
+              />
+            </KGridItem>
+            <KGridItem
+              :layout4="{ span: 3 }"
+              :layout8="{ span: 3 }"
+              :layout12="{ span: 5 }"
+            >
+              <KTextbox
+                v-model="dueDate"
+                type="date"
+                :label="dueDateLabel$()"
+                :disabled="disabled || formIsSubmitted"
+              />
+            </KGridItem>
+          </template>
         </KGrid>
       </fieldset>
 
@@ -184,6 +218,8 @@
         recipientsLabel$,
         descriptionLabel$,
         titleLabel$,
+        startDateLabel$,
+        dueDateLabel$,
         saveLessonError$,
         saveQuizError$,
         saveLessonErrorDeletedUsers$,
@@ -202,6 +238,8 @@
         recipientsLabel$,
         descriptionLabel$,
         titleLabel$,
+        startDateLabel$,
+        dueDateLabel$,
         saveLessonError$,
         saveQuizError$,
         saveLessonErrorDeletedUsers$,
@@ -264,6 +302,10 @@
         selectedCollectionIds: this.assignment.assignments || [],
         activeIsSelected: this.assignment.active || false,
         adHocLearners: this.assignment.learner_ids || [],
+        // A native `type="date"` input works with plain 'YYYY-MM-DD' strings;
+        // the API returns full ISO datetimes, so take just the date part.
+        startDate: this.assignment.start_date ? this.assignment.start_date.slice(0, 10) : '',
+        dueDate: this.assignment.due_date ? this.assignment.due_date.slice(0, 10) : '',
         formIsSubmitted: false,
         showServerError: false,
         showDeletedUsersError: false,
@@ -334,6 +376,13 @@
       iconName() {
         return this.assignmentIsQuiz ? 'quiz' : 'lesson';
       },
+      // Due date means "due by the end of that day", not midnight at its start.
+      startDateISO() {
+        return this.startDate ? `${this.startDate}T00:00:00` : null;
+      },
+      dueDateISO() {
+        return this.dueDate ? `${this.dueDate}T23:59:59` : null;
+      },
       submitObject() {
         return {
           title: this.title,
@@ -342,6 +391,8 @@
           active: this.activeIsSelected,
           learner_ids: this.adHocLearners,
           instant_report_visibility: this.instantReportVisibility,
+          start_date: this.startDateISO,
+          due_date: this.dueDateISO,
         };
       },
       reportVisibilityOptions() {
@@ -373,6 +424,12 @@
       },
       instantReportVisibility() {
         this.$emit('update', { instant_report_visibility: this.instantReportVisibility });
+      },
+      startDateISO() {
+        this.$emit('update', { start_date: this.startDateISO });
+      },
+      dueDateISO() {
+        this.$emit('update', { due_date: this.dueDateISO });
       },
       submitObject() {
         if (this.showServerError) {

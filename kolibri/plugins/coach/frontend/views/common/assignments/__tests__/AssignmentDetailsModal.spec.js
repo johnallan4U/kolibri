@@ -24,11 +24,15 @@ function makeWrapper(options) {
   const els = {
     titleField: () => wrapper.findAllComponents({ name: 'KTextbox' }).at(0),
     descriptionField: () => wrapper.findAllComponents({ name: 'KTextbox' }).at(1),
+    startDateField: () => wrapper.findAllComponents({ name: 'KTextbox' }).at(2),
+    dueDateField: () => wrapper.findAllComponents({ name: 'KTextbox' }).at(3),
     form: () => wrapper.find('form'),
   };
   const actions = {
     inputTitle: text => els.titleField().vm.$emit('input', text),
     inputDescription: text => els.descriptionField().vm.$emit('input', text),
+    inputStartDate: date => els.startDateField().vm.$emit('input', date),
+    inputDueDate: date => els.dueDateField().vm.$emit('input', date),
     submitForm: () => els.form().trigger('submit'),
   };
   return { wrapper, els, actions };
@@ -46,6 +50,8 @@ describe('AssignmentDetailsModal', () => {
       description: 'The first lesson',
       assignments: [defaultProps.classId],
       learner_ids: [],
+      start_date: null,
+      due_date: null,
     };
     actions.inputTitle('Lesson 1');
     actions.inputDescription('The first lesson');
@@ -68,6 +74,8 @@ describe('AssignmentDetailsModal', () => {
     const expected = {
       ...defaultProps.assignment,
       title: 'Old Lesson V2',
+      start_date: null,
+      due_date: null,
     };
     actions.inputTitle('Old Lesson V2');
     await wrapper.vm.submitData();
@@ -81,8 +89,25 @@ describe('AssignmentDetailsModal', () => {
     const expected = {
       ...defaultProps.assignment,
       description: 'Its da remix',
+      start_date: null,
+      due_date: null,
     };
     actions.inputDescription('Its da remix');
+    await wrapper.vm.submitData();
+    expect(wrapper.emitted().submit[0][0]).toEqual(expected);
+  });
+
+  it('if the start/due dates have changed, makes a request after clicking submit with them included', async () => {
+    const { wrapper, actions } = makeWrapper({
+      propsData: defaultProps,
+    });
+    const expected = {
+      ...defaultProps.assignment,
+      start_date: '2026-09-08T00:00:00',
+      due_date: '2026-09-15T23:59:59',
+    };
+    actions.inputStartDate('2026-09-08');
+    actions.inputDueDate('2026-09-15');
     await wrapper.vm.submitData();
     expect(wrapper.emitted().submit[0][0]).toEqual(expected);
   });
