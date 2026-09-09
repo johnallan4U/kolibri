@@ -71,6 +71,11 @@ class Lesson(AbstractFacilityDataModel):
     )
     date_created = DateTimeTzField(default=local_now, editable=False)
 
+    # Optional schedule window a coach can set, shown to learners so they
+    # know when a lesson should be started and finished by.
+    start_date = DateTimeTzField(null=True, blank=True, default=None)
+    due_date = DateTimeTzField(null=True, blank=True, default=None)
+
     morango_model_name = "lesson"
 
     content_assignments = ContentAssignmentManager(
