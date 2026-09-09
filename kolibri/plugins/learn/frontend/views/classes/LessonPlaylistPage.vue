@@ -44,13 +44,32 @@
         class="content-cards"
       >
         <HybridLearningLessonCard
-          v-for="content in contentNodes"
+          v-for="content in incompleteContentNodes"
           :key="content.id"
           :content="content"
           class="content-card"
           :isMobile="windowIsSmall"
           :link="genContentLinkBackLinkCurrentPage(content.id, true)"
         />
+        <AccordionContainer
+          v-if="completedContentNodes.length"
+          class="completed-accordion"
+        >
+          <AccordionItem
+            :title="$tr('completedResourcesCount', { count: completedContentNodes.length })"
+          >
+            <template #content>
+              <HybridLearningLessonCard
+                v-for="content in completedContentNodes"
+                :key="content.id"
+                :content="content"
+                class="content-card"
+                :isMobile="windowIsSmall"
+                :link="genContentLinkBackLinkCurrentPage(content.id, true)"
+              />
+            </template>
+          </AccordionItem>
+        </AccordionContainer>
       </section>
       <p
         v-else
@@ -74,6 +93,8 @@
   import ContentIcon from 'kolibri-common/components/labels/ContentIcon';
   import commonCoreStrings from 'kolibri/uiText/commonCoreStrings';
   import { pageLoading } from 'kolibri-common/composables/usePageLoading';
+  import AccordionContainer from 'kolibri-common/components/accordion/AccordionContainer';
+  import AccordionItem from 'kolibri-common/components/accordion/AccordionItem';
   import ResourceSyncingUiAlert from '../ResourceSyncingUiAlert';
   import useContentLink from '../../composables/useContentLink';
   import useContentNodeProgress from '../../composables/useContentNodeProgress';
@@ -96,6 +117,8 @@
       ProgressIcon,
       LearnAppBarPage,
       ResourceSyncingUiAlert,
+      AccordionContainer,
+      AccordionItem,
     },
     mixins: [commonCoreStrings, commonLearnStrings],
     setup() {
@@ -120,6 +143,16 @@
       },
       lessonResources() {
         return (this.currentLesson && this.currentLesson.resources) || [];
+      },
+      completedContentNodes() {
+        return this.contentNodes.filter(
+          content => (this.contentNodeProgressMap[content.content_id] || 0) >= 1,
+        );
+      },
+      incompleteContentNodes() {
+        return this.contentNodes.filter(
+          content => (this.contentNodeProgressMap[content.content_id] || 0) < 1,
+        );
       },
       lessonHasResources() {
         return this.lessonResources.length > 0;
@@ -179,6 +212,12 @@
       ...mapMutations('lessonPlaylist', ['SET_CURRENT_LESSON']),
     },
     $trs: {
+      completedResourcesCount: {
+        message:
+          '{count, number} {count, plural, one {resource completed} other {resources completed}}',
+        context:
+          "Label for the collapsed section header that groups a learner's already-completed resources in a lesson, out of the way of the resources still to do.",
+      },
       noResourcesInLesson: {
         message: 'There are no resources in this lesson',
         context:
@@ -211,6 +250,14 @@
 
   .content-card {
     margin-bottom: 16px;
+  }
+
+  .completed-accordion {
+    margin-bottom: 16px;
+
+    .content-card:last-child {
+      margin-bottom: 0;
+    }
   }
 
   .no-resources-message {
