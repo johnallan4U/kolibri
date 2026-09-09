@@ -5,6 +5,7 @@ from kolibri.core.auth.constants import role_kinds
 from kolibri.core.auth.models import AbstractFacilityDataModel
 from kolibri.core.auth.models import FacilityUser
 from kolibri.core.auth.permissions.base import RoleBasedPermissions
+from kolibri.core.auth.permissions.general import IsOwn
 from kolibri.core.fields import DateTimeTzField
 from kolibri.utils.time_utils import local_now
 
@@ -18,7 +19,13 @@ class LearnerNodeAssignment(AbstractFacilityDataModel):
     no ad hoc group: this model is always exactly one node + one learner.
     """
 
-    permissions = RoleBasedPermissions(
+    # A learner can always read (but not create/update/delete - read_only)
+    # their own assignment rows, so the Learn plugin can show them what's
+    # been assigned; creating/removing an assignment is still admin/coach
+    # only, via the RoleBasedPermissions below. Mirrors log_permissions() in
+    # kolibri/core/logger/models.py, the established idiom for a model tied
+    # to exactly one FacilityUser.
+    permissions = IsOwn(field_name="learner_id", read_only=True) | RoleBasedPermissions(
         target_field="learner",
         can_be_created_by=(role_kinds.ADMIN, role_kinds.COACH),
         can_be_read_by=(role_kinds.ADMIN, role_kinds.COACH),

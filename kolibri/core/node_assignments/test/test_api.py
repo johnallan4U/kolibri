@@ -174,3 +174,89 @@ class LearnerNodeAssignmentAPITestCase(APITestCase):
             {"learner": self.learner.id, "node_ids": str(self.topic.id)},
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_learner_can_read_their_own_assignments(self):
+        LearnerNodeAssignment.objects.create(
+            contentnode_id=self.topic.id,
+            title="Arithmetic",
+            learner=self.learner,
+            assigned_by=self.coach,
+        )
+        self.client.login(username=self.learner.username, password=DUMMY_PASSWORD)
+        response = self.client.get(reverse("kolibri:core:learnernodeassignment-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["contentnode_id"], str(self.topic.id))
+
+    def test_learner_can_fetch_their_own_completion(self):
+        self.client.login(username=self.learner.username, password=DUMMY_PASSWORD)
+        response = self.client.get(
+            reverse("kolibri:core:learnernodeassignment-completion"),
+            {"learner": self.learner.id, "node_ids": str(self.topic.id)},
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(str(self.topic.id), response.data)
+
+    def test_learner_cannot_read_another_learners_assignments(self):
+        other_learner = FacilityUser.objects.create(
+            username="other_learner", facility=self.facility
+        )
+        other_learner.set_password(DUMMY_PASSWORD)
+        other_learner.save()
+        self.classroom.add_member(other_learner)
+        LearnerNodeAssignment.objects.create(
+            contentnode_id=self.topic.id,
+            title="Arithmetic",
+            learner=self.learner,
+            assigned_by=self.coach,
+        )
+        self.client.login(username=other_learner.username, password=DUMMY_PASSWORD)
+        response = self.client.get(reverse("kolibri:core:learnernodeassignment-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 0)
+
+    def test_learner_cannot_fetch_another_learners_completion(self):
+        other_learner = FacilityUser.objects.create(
+            username="other_learner", facility=self.facility
+        )
+        other_learner.set_password(DUMMY_PASSWORD)
+        other_learner.save()
+        self.classroom.add_member(other_learner)
+        self.client.login(username=other_learner.username, password=DUMMY_PASSWORD)
+        response = self.client.get(
+            reverse("kolibri:core:learnernodeassignment-completion"),
+            {"learner": self.learner.id, "node_ids": str(self.topic.id)},
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_learner_cannot_assign_content_to_themself(self):
+        self.client.login(username=self.learner.username, password=DUMMY_PASSWORD)
+        response = self.client.post(
+            reverse("kolibri:core:learnernodeassignment-list"),
+            {"contentnode_id": self.topic.id, "learner": self.learner.id},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_learner_cannot_unassign_their_own_content(self):
+        LearnerNodeAssignment.objects.create(
+            contentnode_id=self.topic.id,
+            title="Arithmetic",
+            learner=self.learner,
+            assigned_by=self.coach,
+        )
+        self.client.login(username=self.learner.username, password=DUMMY_PASSWORD)
+        response = self.client.delete(
+            reverse("kolibri:core:learnernodeassignment-unassign"),
+            {"contentnode_id": self.topic.id, "learner": self.learner.id},
+        )
+        # unassign's manual filter_readable scoping shares can_be_deleted_by's
+        # admin/coach-only scoping, so a learner's request matches zero rows -
+        # a silent no-op (204), not an error, matching the existing
+        # unrelated-coach no-op behavior above.
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertTrue(
+            LearnerNodeAssignment.objects.filter(
+                contentnode_id=self.topic.id, learner=self.learner
+            ).exists()
+        )

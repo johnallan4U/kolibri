@@ -40,17 +40,17 @@ class LearnerNodeAssignmentViewset(ValuesViewset):
         # KolibriAuthPermissionsFilter only scopes GET requests (it assumes
         # non-GET requests get checked object-by-object via
         # has_object_permission, which never runs for a detail=False
-        # action) - so scope this delete manually via filter_readable,
-        # which shares can_be_deleted_by's exact role/collection scoping
-        # for this model. filter_readable applies .distinct(), which
-        # Django refuses to combine with .delete(), so resolve matching
-        # ids first and delete those from a fresh, undecorated queryset.
-        readable_ids = request.user.filter_readable(
-            self.get_queryset().filter(
-                contentnode_id=contentnode_id, learner_id=learner_id
-            )
-        ).values_list("id", flat=True)
-        LearnerNodeAssignment.objects.filter(id__in=list(readable_ids)).delete()
+        # action) - so scope this delete manually. Note this can't reuse
+        # filter_readable: since a learner can now *read* their own rows
+        # (IsOwn(read_only=True) on the model), filter_readable would wrongly
+        # let a learner delete their own assignment too. unique_together
+        # means at most one row can match, so fetch it directly and check
+        # the real delete permission (admin/coach only) on that object.
+        assignment = LearnerNodeAssignment.objects.filter(
+            contentnode_id=contentnode_id, learner_id=learner_id
+        ).first()
+        if assignment is not None and request.user.can_delete(assignment):
+            assignment.delete()
         return Response(status=204)
 
     @action(detail=False, methods=["get"])
