@@ -134,8 +134,10 @@ class LearnerNodeAssignmentAPITestCase(APITestCase):
     def test_unrelated_coach_unassign_is_a_silent_no_op(self):
         """
         An unrelated coach's unassign request matches zero rows once scoped
-        by KolibriAuthPermissionsFilter, so it succeeds as a no-op rather
-        than leaking whether the assignment exists via a 403/404.
+        by filter_readable (KolibriAuthPermissionsFilter itself does not
+        scope non-GET requests - see the comment in viewsets.py), so it
+        succeeds as a no-op rather than leaking whether the assignment
+        exists via a 403/404.
         """
         LearnerNodeAssignment.objects.create(
             contentnode_id=self.topic.id,
@@ -155,3 +157,20 @@ class LearnerNodeAssignmentAPITestCase(APITestCase):
                 contentnode_id=self.topic.id, learner=self.learner
             ).exists()
         )
+
+    def test_coach_can_fetch_completion_for_their_learner(self):
+        self.client.login(username=self.coach.username, password=DUMMY_PASSWORD)
+        response = self.client.get(
+            reverse("kolibri:core:learnernodeassignment-completion"),
+            {"learner": self.learner.id, "node_ids": str(self.topic.id)},
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(str(self.topic.id), response.data)
+
+    def test_unrelated_coach_cannot_fetch_completion_for_someone_elses_learner(self):
+        self.client.login(username=self.other_coach.username, password=DUMMY_PASSWORD)
+        response = self.client.get(
+            reverse("kolibri:core:learnernodeassignment-completion"),
+            {"learner": self.learner.id, "node_ids": str(self.topic.id)},
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

@@ -1,11 +1,13 @@
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from .completion import get_completion_for_nodes
 from .models import LearnerNodeAssignment
 from .serializers import LearnerNodeAssignmentSerializer
 from kolibri.core.api import ValuesViewset
 from kolibri.core.auth.api import KolibriAuthPermissions
 from kolibri.core.auth.api import KolibriAuthPermissionsFilter
+from kolibri.core.auth.models import FacilityUser
 
 
 class LearnerNodeAssignmentViewset(ValuesViewset):
@@ -50,3 +52,23 @@ class LearnerNodeAssignmentViewset(ValuesViewset):
         ).values_list("id", flat=True)
         LearnerNodeAssignment.objects.filter(id__in=list(readable_ids)).delete()
         return Response(status=204)
+
+    @action(detail=False, methods=["get"])
+    def completion(self, request):
+        """
+        Batch completion/assignment status for a set of nodes, for one
+        learner - one call per tree level the coach is browsing, not one
+        call per node. GET requests are the one place a plain queryset
+        `.filter()` here would be unscoped (this action never touches
+        self.get_queryset()), so the learner is explicitly permission-
+        checked before any data is computed.
+        """
+        learner_id = request.query_params.get("learner")
+        node_ids = [n for n in request.query_params.get("node_ids", "").split(",") if n]
+        if not learner_id or not node_ids:
+            return Response({})
+        if not request.user.filter_readable(
+            FacilityUser.objects.filter(id=learner_id)
+        ).exists():
+            return Response(status=403)
+        return Response(get_completion_for_nodes(node_ids, learner_id))
