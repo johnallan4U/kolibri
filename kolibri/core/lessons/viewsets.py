@@ -63,6 +63,8 @@ class LessonViewset(ValuesViewset):
         "collection__parent_id",
         "created_by",
         "date_created",
+        "start_date",
+        "due_date",
         "lesson_assignment_collections",
     )
 

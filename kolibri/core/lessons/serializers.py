@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
 from rest_framework.serializers import BooleanField
+from rest_framework.serializers import DateTimeField
 from rest_framework.serializers import ListField
 from rest_framework.serializers import ModelSerializer
 from rest_framework.serializers import PrimaryKeyRelatedField
@@ -42,6 +43,11 @@ class LessonSerializer(ModelSerializer):
         required=False,
     )
     active = BooleanField(source="is_active", required=False)
+    # DateTimeTzField isn't a Django field type DRF recognizes, so without an
+    # explicit declaration here DRF falls back to parsing input against
+    # Kolibri's internal storage format instead of standard ISO 8601.
+    start_date = DateTimeField(required=False, allow_null=True)
+    due_date = DateTimeField(required=False, allow_null=True)
 
     class Meta:
         model = Lesson
@@ -55,9 +61,19 @@ class LessonSerializer(ModelSerializer):
             "assignments",
             "learner_ids",
             "created_by",
+            "start_date",
+            "due_date",
         )
 
     def validate(self, attrs):
+        start_date = attrs.get("start_date", getattr(self.instance, "start_date", None))
+        due_date = attrs.get("due_date", getattr(self.instance, "due_date", None))
+        if start_date and due_date and due_date < start_date:
+            raise ValidationError(
+                "due_date must not be earlier than start_date",
+                code=error_constants.INVALID,
+            )
+
         title = attrs.get("title")
         # first condition is for creating object, second is for updating
         collection = attrs.get("collection") or getattr(self.instance, "collection")
@@ -105,6 +121,8 @@ class LessonSerializer(ModelSerializer):
             "collection": "df6308209356328f726a09aa9bd323b7", // classroom ID
             "assignments": [{"collection": "df6308209356328f726a09aa9bd323b7"}] // learnergroup IDs
             "learner_ids": ["df6308209356328f726a09aa9bd323b8"] // learner ids this lesson is directly assigned to
+            "start_date": "2026-09-08T00:00:00Z", // optional, when the lesson should be started
+            "due_date": "2026-09-15T00:00:00Z", // optional, when the lesson should be finished
         }
         """
         collections = validated_data.pop("assignments", [])
@@ -129,6 +147,8 @@ class LessonSerializer(ModelSerializer):
         instance.description = validated_data.get("description", instance.description)
         instance.is_active = validated_data.get("is_active", instance.is_active)
         instance.resources = validated_data.get("resources", instance.resources)
+        instance.start_date = validated_data.get("start_date", instance.start_date)
+        instance.due_date = validated_data.get("due_date", instance.due_date)
 
         # Add/delete any new/removed Assignments
         if "assignments" in validated_data:

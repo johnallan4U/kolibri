@@ -543,3 +543,57 @@ class LessonAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.lesson.refresh_from_db()
         self.assertFalse(self.lesson.is_active)
+
+    def test_can_create_lesson_with_schedule(self):
+        self.client.login(username=self.admin.username, password=DUMMY_PASSWORD)
+
+        response = self.client.post(
+            reverse("kolibri:core:lesson-list"),
+            {
+                "title": "title next",
+                "active": True,
+                "collection": self.classroom.id,
+                "assignments": [],
+                "start_date": "2026-09-08T00:00:00Z",
+                "due_date": "2026-09-15T00:00:00Z",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        lesson = models.Lesson.objects.get(title="title next")
+        self.assertIsNotNone(lesson.start_date)
+        self.assertIsNotNone(lesson.due_date)
+
+    def test_can_update_lesson_schedule(self):
+        self.client.login(username=self.admin.username, password=DUMMY_PASSWORD)
+
+        response = self.client.patch(
+            reverse("kolibri:core:lesson-detail", kwargs={"pk": self.lesson.id}),
+            {
+                "start_date": "2026-09-08T00:00:00Z",
+                "due_date": "2026-09-15T00:00:00Z",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.lesson.refresh_from_db()
+        self.assertIsNotNone(self.lesson.start_date)
+        self.assertIsNotNone(self.lesson.due_date)
+
+    def test_cannot_set_due_date_before_start_date(self):
+        self.client.login(username=self.admin.username, password=DUMMY_PASSWORD)
+
+        response = self.client.patch(
+            reverse("kolibri:core:lesson-detail", kwargs={"pk": self.lesson.id}),
+            {
+                "start_date": "2026-09-15T00:00:00Z",
+                "due_date": "2026-09-08T00:00:00Z",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data[0]["id"], error_constants.INVALID)
+
+    def test_lesson_schedule_defaults_to_none(self):
+        self.assertIsNone(self.lesson.start_date)
+        self.assertIsNone(self.lesson.due_date)
