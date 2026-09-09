@@ -96,6 +96,7 @@ INSTALLED_APPS = [
     "kolibri.core.device",
     "kolibri.core.discovery",
     "kolibri.core.lessons",
+    "kolibri.core.node_assignments",
     "kolibri.core.analytics",
     "kolibri.core.attendance",
     "rest_framework",
