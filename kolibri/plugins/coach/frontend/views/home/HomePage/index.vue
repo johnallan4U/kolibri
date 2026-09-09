@@ -29,8 +29,8 @@
         <h2>{{ learner.name }}</h2>
         <KButtonGroup>
           <KRouterLink
-            :text="$tr('assignedWorkAction')"
-            :to="classRoute(PageNames.LEARNER_SUMMARY, { learnerId: learner.id })"
+            :text="$tr('assignAction')"
+            :to="classRoute(PageNames.LEARNER_ASSIGN, { learnerId: learner.id })"
             appearance="basic-link"
           />
           <KRouterLink
@@ -124,9 +124,9 @@
       },
     },
     $trs: {
-      assignedWorkAction: {
-        message: 'Assigned work',
-        context: "Link to a learner's assigned lessons and quizzes.",
+      assignAction: {
+        message: 'Assign',
+        context: 'Link to browse content and assign/unassign it for a learner.',
       },
       progressAction: {
         message: 'Progress',

@@ -5,6 +5,7 @@ import LearnersRootPage from '../views/learners/LearnersRootPage';
 import ProgressDashboardPage from '../views/learners/ProgressDashboardPage';
 import LearnerSummaryPage from '../views/learners/LearnerSummaryPage';
 import LearnerLessonPage from '../views/learners/reports/LearnerLessonPage.vue';
+import AssignContentPage from '../views/home/AssignContentPage';
 import { classIdParamRequiredGuard, RouteSegments } from './utils';
 
 const { CLASS, OPTIONAL_CLASS, ALL_LEARNERS, LEARNER, LESSON } = RouteSegments;
@@ -54,6 +55,15 @@ export default [
     },
     meta: {
       titleParts: ['progressDashboardLabel', 'CLASS_NAME'],
+    },
+  },
+  {
+    name: PageNames.LEARNER_ASSIGN,
+    path: CLASS + LEARNER + '/assign',
+    component: AssignContentPage,
+    handler: defaultHandler,
+    meta: {
+      titleParts: ['LEARNER_NAME', 'CLASS_NAME'],
     },
   },
   {
