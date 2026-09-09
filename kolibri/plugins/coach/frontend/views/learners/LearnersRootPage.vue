@@ -84,6 +84,7 @@
   import { picturePasswordStrings } from 'kolibri-common/strings/picturePasswords';
   import { ref } from 'vue';
   import { pageLoading } from 'kolibri-common/composables/usePageLoading';
+  import useLearnerProgressSummary from '../../composables/useLearnerProgressSummary';
   import commonCoach from '../common';
   import CoachAppBarPage from '../CoachAppBarPage';
   import CSVExporter from '../../csv/exporter';
@@ -111,12 +112,14 @@
         label: entireClassLabel$(),
         value: entireClassLabel$(),
       });
+      const { getLearnerProgressSummary } = useLearnerProgressSummary();
 
       return {
         pageLoading,
         entireClassLabel$,
         viewPasswordsAction$,
         recipientSelected,
+        getLearnerProgressSummary,
         PageNames,
         LastPages,
       };
@@ -137,12 +140,13 @@
           const contentStatuses = this.contentStatuses.filter(
             status => learner.id === status.learner_id,
           );
+          const summary = this.getLearnerProgressSummary(learner.id);
           const augmentedObj = {
             groups: groupNames,
-            avgScore: this.avgScore(examStatuses),
+            avgScore: summary.avgScore,
             lessons: undefined,
-            exercises: this.exercisesCompleted(contentStatuses),
-            resources: this.resourcesViewed(contentStatuses),
+            exercises: summary.exercisesCompleted,
+            resources: summary.resourcesViewed,
             lastActivity: this.lastActivity(examStatuses, contentStatuses),
           };
           Object.assign(augmentedObj, learner);
@@ -182,13 +186,6 @@
       },
     },
     methods: {
-      avgScore(examStatuses) {
-        const statuses = examStatuses.filter(status => status.status === this.STATUSES.completed);
-        if (!statuses.length) {
-          return null;
-        }
-        return this._.meanBy(statuses, 'score');
-      },
       lastActivity(examStatuses, contentStatuses) {
         const statuses = [
           ...examStatuses,
@@ -196,22 +193,6 @@
         ];
 
         return statuses.length ? this.maxLastActivity(statuses) : null;
-      },
-      exercisesCompleted(contentStatuses) {
-        const statuses = contentStatuses.filter(
-          status =>
-            this.contentIdIsForExercise(status.content_id) &&
-            status.status === this.STATUSES.completed,
-        );
-        return statuses.length;
-      },
-      resourcesViewed(contentStatuses) {
-        const statuses = contentStatuses.filter(
-          status =>
-            !this.contentIdIsForExercise(status.content_id) &&
-            status.status !== this.STATUSES.notStarted,
-        );
-        return statuses.length;
       },
       exportCSV() {
         const columns = [

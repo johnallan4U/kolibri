@@ -74,10 +74,10 @@
           <div class="value-box">
             <p class="value">{{ lessonsCompleted }}</p>
             <p
-              v-if="learnerLessons.length > 0"
+              v-if="learnerSummary.totalLessons > 0"
               style="display: inline; word-wrap: break-word"
             >
-              {{ $tr('totalLessons', { total: learnerLessons.length }) }}
+              {{ $tr('totalLessons', { total: learnerSummary.totalLessons }) }}
             </p>
           </div>
         </div>
@@ -134,6 +134,7 @@
 
   import commonCoreStrings from 'kolibri/uiText/commonCoreStrings';
   import UserPicturePassword from 'kolibri-common/components/UserPicturePassword';
+  import useLearnerProgressSummary from '../../../composables/useLearnerProgressSummary';
   import commonCoach from '../../common';
   import ReportsControls from '../../common/ReportsControls';
 
@@ -144,12 +145,9 @@
       UserPicturePassword,
     },
     mixins: [commonCoach, commonCoreStrings],
-    // A list of all lessons assigned to the relevant Learner
-    props: {
-      learnerLessons: {
-        type: Array,
-        required: true,
-      },
+    setup() {
+      const { getLearnerProgressSummary } = useLearnerProgressSummary();
+      return { getLearnerProgressSummary };
     },
     computed: {
       picturePasswordSettings() {
@@ -158,47 +156,20 @@
       learner() {
         return this.learnerMap[this.$route.params.learnerId];
       },
-      learnerContentStatuses() {
-        return this.contentStatuses.filter(status => this.learner.id === status.learner_id);
+      learnerSummary() {
+        return this.getLearnerProgressSummary(this.learner.id);
       },
       lessonsCompleted() {
-        const learnerLessonIds = this.learnerLessons.map(l => l.id);
-        const statuses = this.lessonStatuses.filter(
-          status =>
-            status.status === this.STATUSES.completed &&
-            status.learner_id === this.learner.id &&
-            learnerLessonIds.includes(status.lesson_id),
-        );
-        if (!statuses.length) {
-          return 0;
-        }
-        return statuses.length;
+        return this.learnerSummary.lessonsCompleted;
       },
       avgScore() {
-        const statuses = this.examStatuses.filter(
-          status =>
-            this.learner.id === status.learner_id && status.status === this.STATUSES.completed,
-        );
-        if (!statuses.length) {
-          return null;
-        }
-        return this._.meanBy(statuses, 'score');
+        return this.learnerSummary.avgScore;
       },
       exercisesCompleted() {
-        const statuses = this.learnerContentStatuses.filter(
-          status =>
-            this.contentIdIsForExercise(status.content_id) &&
-            status.status === this.STATUSES.completed,
-        );
-        return statuses.length;
+        return this.learnerSummary.exercisesCompleted;
       },
       resourcesViewed() {
-        const statuses = this.learnerContentStatuses.filter(
-          status =>
-            !this.contentIdIsForExercise(status.content_id) &&
-            status.status !== this.STATUSES.notStarted,
-        );
-        return statuses.length;
+        return this.learnerSummary.resourcesViewed;
       },
       boxStyle() {
         return {

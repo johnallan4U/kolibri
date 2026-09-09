@@ -184,6 +184,8 @@ function _mapLessons(lessons) {
   return _itemMap(lessons, 'id', lesson => {
     // convert dates
     lesson.date_created = new Date(lesson.date_created);
+    lesson.start_date = lesson.start_date ? new Date(lesson.start_date) : null;
+    lesson.due_date = lesson.due_date ? new Date(lesson.due_date) : null;
     return lesson;
   });
 }
