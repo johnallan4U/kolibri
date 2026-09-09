@@ -111,4 +111,39 @@ describe('useLearnerProgressSummary', () => {
     expect(summary.totalLessons).toBe(0);
     expect(summary.isBehindSchedule).toBe(false);
   });
+
+  describe('getLearnerLessons', () => {
+    it('returns only the lessons assigned to the given learner', () => {
+      const store = makeStoreWithClassSummary({
+        groupMap: {
+          'group-1': { id: 'group-1', name: 'Group 1', member_ids: ['learner-1'] },
+        },
+        lessonMap: {
+          'lesson-1': {
+            id: 'lesson-1',
+            title: 'For learner-1',
+            assignments: ['group-1'],
+            learner_ids: [],
+            node_ids: [],
+            due_date: null,
+            start_date: null,
+          },
+          'lesson-2': {
+            id: 'lesson-2',
+            title: 'For nobody in particular',
+            assignments: [],
+            learner_ids: [],
+            node_ids: [],
+            due_date: null,
+            start_date: null,
+          },
+        },
+      });
+      const { getLearnerLessons } = useLearnerProgressSummary(store);
+
+      const lessons = getLearnerLessons('learner-1');
+
+      expect(lessons.map(lesson => lesson.id)).toEqual(['lesson-1']);
+    });
+  });
 });

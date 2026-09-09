@@ -19,15 +19,23 @@ export default function useLearnerProgressSummary(store) {
 
   /**
    * @param {string} learnerId
+   * @returns {Object[]} the Lesson objects assigned to this learner
+   */
+  function getLearnerLessons(learnerId) {
+    return store.getters['classSummary/lessons'].filter(lesson =>
+      store.getters['classSummary/getLearnersForLesson'](lesson).includes(learnerId),
+    );
+  }
+
+  /**
+   * @param {string} learnerId
    * @returns {Object} {
    *   lessonsCompleted, totalLessons, overallPercentComplete,
    *   avgScore, exercisesCompleted, resourcesViewed, isBehindSchedule,
    * }
    */
   function getLearnerProgressSummary(learnerId) {
-    const learnerLessons = store.getters['classSummary/lessons'].filter(lesson =>
-      store.getters['classSummary/getLearnersForLesson'](lesson).includes(learnerId),
-    );
+    const learnerLessons = getLearnerLessons(learnerId);
     const learnerLessonIds = learnerLessons.map(lesson => lesson.id);
 
     const lessonsCompleted = store.getters['classSummary/lessonStatuses'].filter(
@@ -74,5 +82,5 @@ export default function useLearnerProgressSummary(store) {
     };
   }
 
-  return { getLearnerProgressSummary };
+  return { getLearnerProgressSummary, getLearnerLessons };
 }
