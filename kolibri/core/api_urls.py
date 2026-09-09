@@ -22,6 +22,10 @@ urlpatterns = [
     re_path(r"^device/", include("kolibri.core.device.api_urls")),
     re_path(r"^lessons/", include("kolibri.core.lessons.api_urls")),
     re_path(r"^courses/", include("kolibri.core.courses.api_urls")),
+    re_path(
+        r"^node_assignments/",
+        include("kolibri.core.node_assignments.api_urls"),
+    ),
     re_path(r"^discovery/", include("kolibri.core.discovery.api_urls")),
     re_path(r"^notifications/", include("kolibri.core.analytics.api_urls")),
     re_path(r"^attendance/", include("kolibri.core.attendance.api_urls")),
