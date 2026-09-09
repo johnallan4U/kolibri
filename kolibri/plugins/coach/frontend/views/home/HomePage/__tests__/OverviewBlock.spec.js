@@ -20,11 +20,12 @@ VueRouter.prototype.getRoute = jest.fn((name, params = {}, query = {}) => ({
   query,
 }));
 
-// Include LEARNER_PASSWORDS so KRouterLink does not warn about an unknown route
-// when picture_password_settings is non-null and the button is rendered.
+// Include LEARNER_PASSWORDS and PROGRESS_DASHBOARD so KRouterLink does not
+// warn about an unknown route when their buttons are rendered.
 const routes = [
   { path: '/test', name: 'test' },
   { path: '/passwords', name: 'LEARNER_PASSWORDS' },
+  { path: '/progress', name: 'PROGRESS_DASHBOARD' },
   { path: '/class-list', name: 'CoachClassListPage' },
 ];
 

@@ -36,6 +36,16 @@
           }"
           class="view-passwords-link"
         />
+        <KRouterLink
+          v-if="learnerNames.length"
+          :text="coachString('progressDashboardLabel')"
+          appearance="raised-button"
+          :to="{
+            name: PageNames.PROGRESS_DASHBOARD,
+            params: { classId },
+          }"
+          class="progress-dashboard-link"
+        />
       </KGridItem>
     </KGrid>
 
@@ -188,6 +198,11 @@
 
   .view-passwords-link {
     margin-top: 16px;
+  }
+
+  .progress-dashboard-link {
+    margin-top: 16px;
+    margin-left: 8px;
   }
 
 </style>

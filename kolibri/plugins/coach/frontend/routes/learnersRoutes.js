@@ -2,6 +2,7 @@ import { pageLoading } from 'kolibri-common/composables/usePageLoading';
 import CoachAllPasswordsPage from '../views/learners/CoachAllPasswordsPage';
 import { PageNames } from '../constants';
 import LearnersRootPage from '../views/learners/LearnersRootPage';
+import ProgressDashboardPage from '../views/learners/ProgressDashboardPage';
 import LearnerSummaryPage from '../views/learners/LearnerSummaryPage';
 import LearnerLessonPage from '../views/learners/reports/LearnerLessonPage.vue';
 import { classIdParamRequiredGuard, RouteSegments } from './utils';
@@ -39,6 +40,20 @@ export default [
     },
     meta: {
       titleParts: ['CLASS_NAME'],
+    },
+  },
+  {
+    name: PageNames.PROGRESS_DASHBOARD,
+    path: OPTIONAL_CLASS + '/progress',
+    component: ProgressDashboardPage,
+    handler(toRoute, fromRoute, next) {
+      if (classIdParamRequiredGuard(toRoute, PageNames.PROGRESS_DASHBOARD, next)) {
+        return;
+      }
+      defaultHandler();
+    },
+    meta: {
+      titleParts: ['progressDashboardLabel', 'CLASS_NAME'],
     },
   },
   {

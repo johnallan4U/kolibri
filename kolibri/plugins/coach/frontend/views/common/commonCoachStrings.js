@@ -87,6 +87,11 @@ const coachStrings = createTranslator('CommonCoachStrings', {
     message: "Back to '{lesson}'",
     context: 'Link that takes the coach back to the lesson view.',
   },
+  behindScheduleLabel: {
+    message: 'Behind schedule',
+    context:
+      "Badge shown for a learner who has a lesson past its due date that they haven't completed yet.",
+  },
   classLabel: {
     message: 'Class',
     context:
@@ -313,6 +318,11 @@ const coachStrings = createTranslator('CommonCoachStrings', {
     message: 'Preview',
     context:
       'When coaches have finished selecting resources for a quiz, they can  preview the quiz to see what it looks like.',
+  },
+  progressDashboardLabel: {
+    message: 'Progress',
+    context:
+      "Title of the page showing each learner's overall completion and schedule status at a glance.",
   },
   questionLabel: {
     message: 'Question',
