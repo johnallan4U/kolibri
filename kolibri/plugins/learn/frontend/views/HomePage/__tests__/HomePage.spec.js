@@ -16,6 +16,9 @@ import useDeviceSettings, { useDeviceSettingsMock } from '../../../composables/u
 import useLearnerResources, {
   useLearnerResourcesMock,
 } from '../../../composables/useLearnerResources';
+import useAssignedContent, {
+  useAssignedContentMock,
+} from '../../../composables/useAssignedContent';
 /* eslint-enable import-x/named */
 jest.mock('kolibri/client');
 jest.mock('kolibri/urls');
@@ -26,6 +29,7 @@ jest.mock('kolibri/composables/useUser');
 jest.mock('../../../composables/useDeviceSettings');
 jest.mock('../../../composables/useLearnerResources');
 jest.mock('../../../composables/useContentLink');
+jest.mock('../../../composables/useAssignedContent');
 jest.mock('kolibri-common/composables/usePageLoading');
 // Needed to test anything using mount() where children use this composable
 jest.mock('kolibri-common/composables/useLearningActivities');
@@ -78,8 +82,8 @@ function makeWrapper() {
   });
 }
 
-function getClassesSection(wrapper) {
-  return wrapper.find('[data-testid="classes"]');
+function getAssignedContentSection(wrapper) {
+  return wrapper.find('[data-testid="assignedContent"]');
 }
 
 function getContinueLearningFromClassesSection(wrapper) {
@@ -98,10 +102,6 @@ function getContinueLearningOnYourOwnSection(wrapper) {
   return wrapper.find('[data-testid="continueLearningOnYourOwn"]');
 }
 
-function getExploreChannelsSection(wrapper) {
-  return wrapper.find('[data-testid="exploreChannels"]');
-}
-
 describe(`HomePage`, () => {
   beforeAll(() => {
     useKResponsiveWindow.mockImplementation(() => ({
@@ -116,6 +116,7 @@ describe(`HomePage`, () => {
     useUser.mockImplementation(() => useUserMock());
     useDeviceSettings.mockImplementation(() => useDeviceSettingsMock());
     useLearnerResources.mockImplementation(() => useLearnerResourcesMock());
+    useAssignedContent.mockImplementation(() => useAssignedContentMock());
     useDevicesWithFilter.mockReturnValue({
       devices: [
         {
@@ -138,45 +139,33 @@ describe(`HomePage`, () => {
     expect(wrapper.exists()).toBe(true);
   });
 
-  describe(`"Your classes" section`, () => {
+  describe(`"Your assigned work" section`, () => {
     it(`the section is not displayed for a guest user`, () => {
       const wrapper = makeWrapper();
-      expect(getClassesSection(wrapper).exists()).toBe(false);
+      expect(getAssignedContentSection(wrapper).exists()).toBe(false);
     });
 
-    it(`the section is not displayed for a signed in user who has no classes and can access unassigned content`, () => {
-      useDeviceSettings.mockImplementation(() =>
-        useDeviceSettingsMock({ canAccessUnassignedContent: true }),
-      );
+    it(`the section is not displayed for a signed in user with no assigned content`, () => {
       useUser.mockImplementation(() => useUserMock({ isUserLoggedIn: true }));
       const wrapper = makeWrapper();
-      expect(getClassesSection(wrapper).exists()).toBe(false);
+      expect(getAssignedContentSection(wrapper).exists()).toBe(false);
     });
 
-    it(`the section is displayed for a signed in user with no classes who cannot access unassigned content`, () => {
-      useDeviceSettings.mockImplementation(() =>
-        useDeviceSettingsMock({ canAccessUnassignedContent: false }),
-      );
+    it(`the section is displayed for a signed in user with some assigned content`, () => {
       useUser.mockImplementation(() => useUserMock({ isUserLoggedIn: true }));
-      const wrapper = makeWrapper();
-      expect(getClassesSection(wrapper).exists()).toBe(true);
-    });
-
-    it(`classes are displayed for a signed in user who is enrolled in some classes`, () => {
-      useUser.mockImplementation(() => useUserMock({ isUserLoggedIn: true }));
-      useLearnerResources.mockImplementation(() =>
-        useLearnerResourcesMock({
-          classes: [
-            { id: 'class-1', name: 'Class 1' },
-            { id: 'class-2', name: 'Class 2' },
+      useAssignedContent.mockImplementation(() =>
+        useAssignedContentMock({
+          assignedContentNodes: [
+            { id: 'node-1', title: 'Node 1' },
+            { id: 'node-2', title: 'Node 2' },
           ],
         }),
       );
       const wrapper = makeWrapper();
-      const links = getClassesSection(wrapper).findAll('[data-testid="classLink"]');
-      expect(links.length).toBe(2);
-      expect(links.at(0).text()).toBe('Class 1');
-      expect(links.at(1).text()).toBe('Class 2');
+      expect(getAssignedContentSection(wrapper).exists()).toBe(true);
+      const assignedContentComponent = wrapper.findComponent({ name: 'AssignedContentCards' });
+      expect(assignedContentComponent.exists()).toBe(true);
+      expect(assignedContentComponent.props('contentNodes')).toHaveLength(2);
     });
   });
 
@@ -382,68 +371,6 @@ describe(`HomePage`, () => {
           expect(continueLearningComponent.exists()).toBe(true);
           expect(continueLearningComponent.props('fromClasses')).toBe(false);
         });
-      });
-    });
-  });
-
-  describe(`"Explore channels" section`, () => {
-    it(`the section is not displayed when there are no channels available`, () => {
-      const wrapper = makeWrapper();
-      expect(getExploreChannelsSection(wrapper).exists()).toBe(false);
-    });
-
-    describe(`when there are some channels available`, () => {
-      beforeEach(() => {
-        const channels = [{ id: 'channel-1' }];
-        useChannels.mockImplementation(() =>
-          useChannelsMock({
-            localChannelsCache: channels,
-            fetchChannels: jest.fn(() => Promise.resolve(channels)),
-          }),
-        );
-      });
-
-      it(`the section is not displayed for a signed in user
-        who hasn't finished all their classes resources and quizzes yet`, () => {
-        useUser.mockImplementation(() => useUserMock({ isUserLoggedIn: true }));
-        const wrapper = makeWrapper();
-        expect(getExploreChannelsSection(wrapper).exists()).toBe(false);
-      });
-
-      it(`the section is not displayed for a signed in user
-        who has finished all their classes resources and quizzes
-        when access to unassigned content is not allowed`, () => {
-        useUser.mockImplementation(() => useUserMock({ isUserLoggedIn: true }));
-        useLearnerResources.mockImplementation(() =>
-          useLearnerResourcesMock({
-            learnerFinishedAllClasses: true,
-          }),
-        );
-        const wrapper = makeWrapper();
-        expect(getExploreChannelsSection(wrapper).exists()).toBe(false);
-      });
-
-      it(`the section is displayed for a signed in user
-        who has finished all their classes resources and quizzes
-        when access to unassigned content is allowed`, () => {
-        useUser.mockImplementation(() => useUserMock({ isUserLoggedIn: true }));
-        useLearnerResources.mockImplementation(() =>
-          useLearnerResourcesMock({
-            learnerFinishedAllClasses: true,
-          }),
-        );
-        useDeviceSettings.mockImplementation(() =>
-          useDeviceSettingsMock({
-            canAccessUnassignedContent: true,
-          }),
-        );
-        const wrapper = makeWrapper();
-        expect(getExploreChannelsSection(wrapper).exists()).toBe(true);
-      });
-
-      it(`the section is displayed for a guest user`, () => {
-        const wrapper = makeWrapper();
-        expect(getExploreChannelsSection(wrapper).exists()).toBe(true);
       });
     });
   });

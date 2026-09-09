@@ -20,12 +20,11 @@
           v-if="missingResources"
           @syncComplete="hydrateHomePage"
         />
-        <YourClasses
-          v-if="displayClasses"
+        <AssignedContentCards
+          v-if="hasAssignedContent"
           class="section"
-          :classes="classes"
-          data-testid="classes"
-          short
+          :contentNodes="assignedContentNodes"
+          data-testid="assignedContent"
         />
         <ContinueLearning
           v-if="continueLearning"
@@ -36,14 +35,6 @@
               ? 'continueLearningFromClasses'
               : 'continueLearningOnYourOwn'
           "
-        />
-        <AssignedCoursesCards
-          v-if="hasActiveClassesCourses"
-          class="section"
-          :courses="activeClassesCourses"
-          displayClassName
-          recent
-          data-testid="recentCourses"
         />
         <AssignedLessonsCards
           v-if="hasActiveClassesLessons"
@@ -60,21 +51,6 @@
           displayClassName
           recent
           data-testid="recentQuizzes"
-        />
-        <ExploreChannels
-          v-if="displayExploreChannels"
-          :channels="channels"
-          class="section"
-          data-testid="exploreChannels"
-          :short="
-            Boolean(
-              displayClasses ||
-                hasActiveClassesCourses ||
-                continueLearning ||
-                hasActiveClassesLessons ||
-                hasActiveClassesQuizzes,
-            )
-          "
         />
       </div>
     </LearnAppBarPage>
@@ -97,6 +73,7 @@
   import { pageLoading } from 'kolibri-common/composables/usePageLoading';
   import { PICTURE_PASSWORD_ASSIGNED_MODAL_PENDING } from 'kolibri-common/constants/Auth';
   import ResourceSyncingUiAlert from '../ResourceSyncingUiAlert';
+  import useAssignedContent from '../../composables/useAssignedContent';
   import useDeviceSettings from '../../composables/useDeviceSettings';
   import useLearnerResources, {
     setClasses,
@@ -105,15 +82,13 @@
   import { setContentNodeProgress } from '../../composables/useContentNodeProgress';
   import { inClasses } from '../../composables/useCoreLearn';
   import { PageNames } from '../../constants';
-  import AssignedCoursesCards from '../classes/AssignedCoursesCards';
   import AssignedLessonsCards from '../classes/AssignedLessonsCards';
   import AssignedQuizzesCards from '../classes/AssignedQuizzesCards';
-  import YourClasses from '../YourClasses';
   import LearnAppBarPage from '../LearnAppBarPage';
   import PostSetupModalGroup from '../../../../device/frontend/views/PostSetupModalGroup.vue';
   import commonLearnStrings from '../commonLearnStrings';
   import ContinueLearning from './ContinueLearning';
-  import ExploreChannels from './ExploreChannels';
+  import AssignedContentCards from './AssignedContentCards';
 
   /**
    * Home page contains useful suggestions for a learner, e.g. their
@@ -125,12 +100,10 @@
   export default {
     name: 'HomePage',
     components: {
-      AssignedCoursesCards,
+      AssignedContentCards,
       AssignedLessonsCards,
       AssignedQuizzesCards,
-      YourClasses,
       ContinueLearning,
-      ExploreChannels,
       LearnAppBarPage,
       ResourceSyncingUiAlert,
       PostSetupModalGroup,
@@ -146,10 +119,9 @@
         false,
       );
       const { canAccessUnassignedContent } = useDeviceSettings();
-      const { localChannelsCache, fetchChannels } = useChannels();
+      const { fetchChannels } = useChannels();
+      const { assignedContentNodes, fetchAssignedContent } = useAssignedContent();
       const {
-        classes,
-        activeClassesCourses,
         activeClassesLessons,
         activeClassesQuizzes,
         resumableClassesQuizzes,
@@ -175,9 +147,8 @@
         () => get(continueLearningFromClasses) || get(continueLearningOnYourOwn),
       );
 
-      const hasActiveClassesCourses = computed(
-        () =>
-          get(isUserLoggedIn) && get(activeClassesCourses) && get(activeClassesCourses).length > 0,
+      const hasAssignedContent = computed(
+        () => get(isUserLoggedIn) && get(assignedContentNodes).length > 0,
       );
       const hasActiveClassesLessons = computed(
         () =>
@@ -187,21 +158,6 @@
         () =>
           get(isUserLoggedIn) && get(activeClassesQuizzes) && get(activeClassesQuizzes).length > 0,
       );
-      const hasChannels = computed(() => {
-        return get(localChannelsCache).length > 0;
-      });
-      const displayExploreChannels = computed(() => {
-        return (
-          get(hasChannels) &&
-          (!get(isUserLoggedIn) ||
-            (get(learnerFinishedAllClasses) && get(canAccessUnassignedContent)))
-        );
-      });
-
-      const displayClasses = computed(() => {
-        return get(isUserLoggedIn) && (get(classes).length || !get(canAccessUnassignedContent));
-      });
-
       const missingResources = computed(() => {
         return (
           get(activeClassesLessons).some(l => l.missing_resource) ||
@@ -224,6 +180,9 @@
             ContentNodeResource.cacheData(resumableResults);
             for (const progress of response.data.resumable_resources_progress) {
               setContentNodeProgress(progress);
+            }
+            if (get(isUserLoggedIn)) {
+              return fetchAssignedContent(get(currentUserId));
             }
           },
         );
@@ -250,18 +209,14 @@
       });
 
       return {
-        channels: localChannelsCache,
-        classes,
-        activeClassesCourses,
+        assignedContentNodes,
+        hasAssignedContent,
         activeClassesLessons,
         activeClassesQuizzes,
-        hasActiveClassesCourses,
         hasActiveClassesLessons,
         hasActiveClassesQuizzes,
         continueLearningFromClasses,
         continueLearning,
-        displayExploreChannels,
-        displayClasses,
         missingResources,
         hydrateHomePage,
         pageLoading,
